@@ -44,7 +44,7 @@ function App() {
         >
           <div className="max-w-7xl mx-auto">
             <Routes>
-              <Route path="/" element={<Navigate to="/parents" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/parents" element={<ParentPersonas />} />
               <Route path="/parents/:id" element={<ParentDetail />} />
