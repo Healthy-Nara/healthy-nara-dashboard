@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { get } from "../lib/api";
-import { ArrowLeft, Calendar, Clock, Users } from "lucide-react";
+import { get, post } from "../lib/api";
+import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { formatDisplayDate, toApiDateFromInput, toDateKey } from "../lib/date";
+import dayjs from "dayjs";
+import { DatePicker } from "@mui/x-date-pickers";
 
 interface BookingItem {
   _id: string;
@@ -28,6 +31,11 @@ interface ChildData {
   gender?: string;
 }
 
+interface CaregiverItem {
+  _id: string;
+  caregiverName: string;
+}
+
 export default function BookingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,6 +44,15 @@ export default function BookingDetail() {
   const [child, setChild] = useState<ChildData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [caregivers, setCaregivers] = useState<CaregiverItem[]>([]);
+  const [selectedCaregiverId, setSelectedCaregiverId] = useState("");
+  const [assignDate, setAssignDate] = useState(toDateKey(new Date()));
+  const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [assignSuccess, setAssignSuccess] = useState<string | null>(null);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -83,6 +100,103 @@ export default function BookingDetail() {
     };
     load();
   }, [id]);
+
+  useEffect(() => {
+    const loadCaregivers = async () => {
+      try {
+        const { data: res } = await get<any>("/api/v1/caregiver-persona");
+        if (Array.isArray(res?.data)) setCaregivers(res.data);
+      } catch (e) {
+        // ignore silently for this auxiliary list
+      }
+    };
+    loadCaregivers();
+  }, []);
+
+  const loadAssignments = async () => {
+    try {
+      setAssignmentsLoading(true);
+      setAssignmentsError(null);
+      const { data: res } = await get<any>("/api/v1/duty-assign");
+      const all = Array.isArray(res?.data) ? res.data : [];
+      const filtered = booking
+        ? all.filter((a: any) => {
+            const idVal =
+              typeof a.bookingId === "string" ? a.bookingId : a.bookingId?._id;
+            return idVal === booking._id;
+          })
+        : [];
+      setAssignments(filtered);
+    } catch (e) {
+      setAssignmentsError(
+        e instanceof Error ? e.message : "Failed to load assignments"
+      );
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (booking?._id) {
+      loadAssignments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [booking?._id]);
+
+  const handleAssign = async () => {
+    if (!booking || !selectedCaregiverId || !assignDate) return;
+    setAssignError(null);
+    setAssignSuccess(null);
+    // Prevent duplicate: same caregiver + same date for this booking
+    const exists = assignments.some((a) => {
+      const aBookingId =
+        typeof a.bookingId === "string" ? a.bookingId : a.bookingId?._id;
+      const aCareId =
+        typeof a.caregiverInfo === "string"
+          ? a.caregiverInfo
+          : a.caregiverInfo?._id;
+      const aDateKey = toDateKey(a.dutyAssignDate);
+      return (
+        aBookingId === booking._id &&
+        aCareId === selectedCaregiverId &&
+        aDateKey === assignDate
+      );
+    });
+    if (exists) {
+      setAssignError(
+        "This caregiver is already assigned for the selected date."
+      );
+      return;
+    }
+    try {
+      setAssigning(true);
+      const parentId =
+        typeof booking.parentInfo === "string"
+          ? booking.parentInfo
+          : booking.parentInfo?._id;
+      const childId =
+        typeof booking.childInfo === "string"
+          ? booking.childInfo
+          : booking.childInfo?._id;
+
+      await post("/api/v1/duty-assign", {
+        bookingId: booking._id,
+        caregiverInfo: selectedCaregiverId,
+        childInfo: childId,
+        parentInfo: parentId,
+        dutyAssignDate: toApiDateFromInput(assignDate),
+      });
+      setAssignSuccess("Duty assigned successfully.");
+      await loadAssignments();
+    } catch (e: any) {
+      setAssignError(
+        e?.response?.data?.message ||
+          (e instanceof Error ? e.message : "Failed to assign duty")
+      );
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   console.log(parent);
   //   console.log(childId);
@@ -133,7 +247,7 @@ export default function BookingDetail() {
             <div className="flex items-center space-x-2">
               <Calendar className="h-4 w-4 text-secondary-600" />
               <span className="text-sm">
-                {new Date(booking.dutyStartingtime).toLocaleDateString()}
+                {formatDisplayDate(booking.dutyStartingtime)}
               </span>
             </div>
             <div className="flex items-center space-x-2">
@@ -201,12 +315,104 @@ export default function BookingDetail() {
               )}
               {child.birthDate && (
                 <div className="text-sm">
-                  Birth Date: {new Date(child.birthDate).toLocaleDateString()}
+                  Birth Date: {formatDisplayDate(child.birthDate)}
                 </div>
               )}
             </div>
           ) : (
             <div className="text-sm text-gray-600">No child details.</div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Assign Duty
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">
+              Caregiver
+            </label>
+            <select
+              value={selectedCaregiverId}
+              onChange={(e) => setSelectedCaregiverId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            >
+              <option value="">Select caregiver</option>
+              {caregivers.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.caregiverName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-gray-700 mb-1">Date</label>
+            <DatePicker
+              format="DD/MM/YYYY"
+              value={dayjs(assignDate)}
+              onChange={(d) =>
+                setAssignDate(toDateKey(d?.toDate() || new Date()))
+              }
+              slotProps={{ textField: { size: "small", fullWidth: true } }}
+            />
+          </div>
+          <div className="flex items-end">
+            <button
+              onClick={handleAssign}
+              disabled={!selectedCaregiverId || !assignDate || assigning}
+              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {assigning ? "Assigning..." : "Assign"}
+            </button>
+          </div>
+        </div>
+        {assignError && (
+          <p className="mt-3 text-sm text-red-600">{assignError}</p>
+        )}
+        {assignSuccess && (
+          <p className="mt-3 text-sm text-green-600">{assignSuccess}</p>
+        )}
+        <div className="mt-6">
+          <h4 className="text-md font-semibold text-gray-900 mb-2">
+            Assignments
+          </h4>
+          {assignmentsLoading ? (
+            <p className="text-sm text-gray-600">Loading assignments...</p>
+          ) : assignmentsError ? (
+            <p className="text-sm text-red-600">{assignmentsError}</p>
+          ) : assignments.length === 0 ? (
+            <p className="text-sm text-gray-600">No assignments yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-600">
+                    <th className="py-2 pr-4">Date</th>
+                    <th className="py-2 pr-4">Caregiver</th>
+                    <th className="py-2 pr-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignments.map((a) => (
+                    <tr key={a._id} className="border-t border-gray-100">
+                      <td className="py-2 pr-4">
+                        {formatDisplayDate(a.dutyAssignDate)}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {typeof a.caregiverInfo === "string"
+                          ? a.caregiverInfo
+                          : a.caregiverInfo?.caregiverName || "—"}
+                      </td>
+                      <td className="py-2 pr-4 capitalize">
+                        {a.careGiverStatus?.replace("-", " ") || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

@@ -1,40 +1,44 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Users, Baby, Calendar, TrendingUp, Star, Clock } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Users, Calendar, TrendingUp, Star, Clock } from "lucide-react";
 import { get } from "../lib/api";
+import { toDateKey } from "../lib/date";
 
 export default function Dashboard() {
   const [parentsCount, setParentsCount] = useState(0);
-  const [childrenCount, setChildrenCount] = useState(0);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [assignments, setAssignments] = useState<any[]>([]);
 
   useEffect(() => {
     const load = async () => {
       try {
-        setLoading(true);
-        const [parentsRes, childrenRes, bookingsRes] = await Promise.all([
+        const [parentsRes, bookingsRes, assignmentsRes] = await Promise.all([
           get<any>("/api/v1/parent"),
-          get<any>("/api/v1/child"),
           get<any>("/api/v1/booking"),
+          get<any>("/api/v1/duty-assign"),
         ]);
         setParentsCount(parentsRes?.data?.data?.parentPersona?.length || 0);
-        setChildrenCount(childrenRes?.data?.data?.childPersona?.length || 0);
         setBookings(bookingsRes?.data?.data || []);
+        setAssignments(
+          assignmentsRes?.data?.data || assignmentsRes?.data || []
+        );
       } finally {
-        setLoading(false);
       }
     };
     load();
   }, []);
 
-  const todayKey = useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
   const todayBookings = useMemo(
     () =>
-      bookings.filter(
-        (b) =>
-          new Date(b.dutyStartingtime).toLocaleDateString("en-CA") === todayKey
-      ).length,
+      bookings.filter((b) => toDateKey(b.dutyStartingtime) === todayKey).length,
     [bookings, todayKey]
+  );
+  const todayAssignments = useMemo(
+    () =>
+      (assignments || []).filter(
+        (a) => toDateKey(a.dutyAssignDate) === todayKey
+      ).length,
+    [assignments, todayKey]
   );
   const totalBookings = bookings.length;
   return (
@@ -60,11 +64,11 @@ export default function Dashboard() {
         <div className="bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-xl p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-secondary-100 text-sm">Total Children</p>
-              <p className="text-2xl font-bold">{childrenCount}</p>
-              <p className="text-secondary-200 text-xs">as of today</p>
+              <p className="text-secondary-100 text-sm">Today's Duty Assign</p>
+              <p className="text-2xl font-bold">{todayAssignments}</p>
+              <p className="text-secondary-200 text-xs">assignments today</p>
             </div>
-            <Baby className="h-8 w-8 text-secondary-200" />
+            <Clock className="h-8 w-8 text-secondary-200" />
           </div>
         </div>
 

@@ -39,6 +39,7 @@ interface ApiResponse {
 
 import { useNavigate, useParams } from "react-router-dom";
 import { get } from "../lib/api";
+import { formatDisplayDate } from "../lib/date";
 
 interface ParentDetailProps {
   id?: string;
@@ -194,8 +195,7 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
                     {child.childName}
                   </p>
                   <p className="text-xs text-gray-600">
-                    {child.gender} •{" "}
-                    {new Date(child.birthDate).toLocaleDateString()}
+                    {child.gender} • {formatDisplayDate(child.birthDate)}
                   </p>
                 </div>
                 <div className="h-8 w-8 rounded-full bg-secondary-100 text-secondary-700 flex items-center justify-center text-xs font-semibold">

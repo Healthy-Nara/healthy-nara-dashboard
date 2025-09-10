@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { RefreshCw, User, Calendar, Users, MapPin } from "lucide-react";
 import { get } from "../lib/api";
+import { formatDisplayDate } from "../lib/date";
 
 interface ChildItem {
   _id: string;
@@ -108,7 +109,7 @@ export default function Children() {
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-primary-600" />
                   <span className="text-sm">
-                    {new Date(c.birthDate).toLocaleDateString()}
+                    {formatDisplayDate(c.birthDate)}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { get } from "../lib/api";
+import { formatDisplayDate } from "../lib/date";
 
 interface Caregiver {
   _id: string;
@@ -163,9 +164,7 @@ export default function Caregivers() {
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-primary-600" />
                   <span className="text-sm">
-                    {c.birthDate
-                      ? new Date(c.birthDate).toLocaleDateString()
-                      : "—"}
+                    {c.birthDate ? formatDisplayDate(c.birthDate) : "—"}
                   </span>
                 </div>
               </div>

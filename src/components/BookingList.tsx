@@ -1,7 +1,19 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Calendar, Clock, Users, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  RefreshCw,
+  Calendar,
+  Clock,
+  Users,
+  Plus,
+  X,
+  CloudMoon,
+  Notebook,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { get } from "../lib/api";
+import { formatDisplayDate, toDateKey } from "../lib/date";
+import dayjs from "dayjs";
+import { DatePicker } from "@mui/x-date-pickers";
 
 interface BookingItem {
   _id: string;
@@ -39,12 +51,9 @@ export default function BookingList() {
     load();
   }, []);
 
-  const dateKey = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString("en-CA"); // yyyy-mm-dd
-  };
+  const dateKey = (iso: string) => toDateKey(iso);
 
-  const todayKey = useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+  const todayKey = useMemo(() => toDateKey(new Date()), []);
   const todayCount = useMemo(
     () => items.filter((b) => dateKey(b.dutyStartingtime) === todayKey).length,
     [items, todayKey]
@@ -95,12 +104,14 @@ export default function BookingList() {
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            />
+            <div className="w-48">
+              <DatePicker
+                format="DD/MM/YYYY"
+                value={dateFilter ? dayjs(dateFilter) : null}
+                onChange={(d) => setDateFilter(d ? toDateKey(d.toDate()) : "")}
+                slotProps={{ textField: { size: "small", fullWidth: true } }}
+              />
+            </div>
             {dateFilter && (
               <button
                 onClick={() => setDateFilter("")}
@@ -166,18 +177,23 @@ export default function BookingList() {
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-secondary-600" />
                   <span className="text-sm">
-                    {new Date(b.dutyStartingtime).toLocaleDateString()}
+                    {formatDisplayDate(b.dutyStartingtime)}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4 text-primary-600" />
-                  <span className="text-sm capitalize">
-                    {b.dutyDuration} • {b.dutyShift}
-                  </span>
+                  <span className="text-sm capitalize">{b.dutyDuration}</span>
                 </div>
-                {b.additionalNotes && (
-                  <p className="text-xs text-gray-600">{b.additionalNotes}</p>
-                )}
+                <div className="flex items-center space-x-2">
+                  <CloudMoon className="h-4 w-4 text-primary-600" />
+                  <span className="text-sm capitalize">{b.dutyShift}</span>
+                </div>
+                {/* {b.additionalNotes && (
+                  <div className="flex items-center space-x-2">
+                    <Notebook className="h-4 w-4 text-primary-600" />
+                    <p className="text-xs text-gray-600">{b.additionalNotes}</p>
+                  </div>
+                )} */}
                 <div className="pt-2">
                   <button
                     onClick={() => navigate(`/appointments/${b._id}`)}

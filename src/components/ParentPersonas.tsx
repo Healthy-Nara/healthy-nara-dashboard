@@ -134,17 +134,17 @@ export default function ParentPersonas({ onViewParent }: ParentPersonasProps) {
           </p>
         </div>
         <div className="flex space-x-3">
-          <button
+          {/* <button
             onClick={fetchParents}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2"
           >
             <RefreshCw className="h-4 w-4" />
             <span>Refresh</span>
-          </button>
-          <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2">
+          </button> */}
+          {/* <button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center space-x-2">
             <Plus className="h-4 w-4" />
             <span>Add Parent</span>
-          </button>
+          </button> */}
         </div>
       </div>
 

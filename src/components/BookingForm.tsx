@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { get, post } from "../lib/api";
+import { toApiDateFromInput, toDateKey } from "../lib/date";
+import dayjs from "dayjs";
+import { DatePicker } from "@mui/x-date-pickers";
 
 interface ParentOption {
   _id: string;
@@ -27,7 +30,7 @@ export default function BookingForm() {
 
   const canSubmit = parentId && childId && dutyStartingtime;
 
-  const loadChildren = async (id) => {
+  const loadChildren = async (id: string) => {
     console.log(parentId);
     // There is no provided children list API; derive from parents endpoint children arrays if present
     try {
@@ -69,7 +72,7 @@ export default function BookingForm() {
         childInfo: childId,
         dutyDuration,
         dutyShift,
-        dutyStartingtime,
+        dutyStartingtime: toApiDateFromInput(dutyStartingtime),
         additionalNotes,
       });
       navigate("/appointments");
@@ -118,7 +121,9 @@ export default function BookingForm() {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             required
           >
-            <option value="">Select Parent</option>
+            <option value="" disabled>
+              Select Parent
+            </option>
             {parents.map((p) => (
               <option key={p._id} value={p._id}>
                 {p.parentName}
@@ -136,7 +141,9 @@ export default function BookingForm() {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             required
           >
-            <option value="">Select Child</option>
+            <option value="" disabled>
+              Select Child
+            </option>
             {children.map((c) => (
               <option key={c._id} value={c._id}>
                 {c.childName}
@@ -178,12 +185,15 @@ export default function BookingForm() {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Start Date<span className="text-red-500">*</span>
           </label>
-          <input
-            type="date"
-            value={dutyStartingtime}
-            onChange={(e) => setDutyStartingtime(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required
+          <DatePicker
+            format="DD/MM/YYYY"
+            value={dutyStartingtime ? dayjs(dutyStartingtime) : null}
+            onChange={(d) =>
+              setDutyStartingtime(d ? toDateKey(d.toDate()) : "")
+            }
+            slotProps={{
+              textField: { size: "small", fullWidth: true, required: true },
+            }}
           />
         </div>
         <div>
