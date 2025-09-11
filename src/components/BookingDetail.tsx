@@ -355,6 +355,7 @@ export default function BookingDetail() {
               onChange={(d) =>
                 setAssignDate(toDateKey(d?.toDate() || new Date()))
               }
+              disablePast
               slotProps={{ textField: { size: "small", fullWidth: true } }}
             />
           </div>

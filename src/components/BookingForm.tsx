@@ -187,6 +187,7 @@ export default function BookingForm() {
           </label>
           <DatePicker
             format="DD/MM/YYYY"
+            disablePast
             value={dutyStartingtime ? dayjs(dutyStartingtime) : null}
             onChange={(d) =>
               setDutyStartingtime(d ? toDateKey(d.toDate()) : "")

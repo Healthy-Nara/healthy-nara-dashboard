@@ -13,10 +13,15 @@ import Children from "./components/Children";
 import BookingDetail from "./components/BookingDetail";
 import Duties from "./components/Duties";
 import DutyDetail from "./components/DutyDetail";
+import Login from "./components/Login";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Routing now controls active page
+  const [authed, setAuthed] = useState<boolean>(
+    typeof localStorage !== "undefined" &&
+      localStorage.getItem("hn_auth") === "1"
+  );
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -28,6 +33,10 @@ function App() {
       <p className="text-gray-600">Coming soon...</p>
     </div>
   );
+
+  if (!authed) {
+    return <Login onLogin={() => setAuthed(true)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
