@@ -118,6 +118,7 @@ export default function BookingDetail() {
       setAssignmentsLoading(true);
       setAssignmentsError(null);
       const { data: res } = await get<any>("/api/v1/duty-assign");
+      // console.log(res);
       const all = Array.isArray(res?.data) ? res.data : [];
       const filtered = booking
         ? all.filter((a: any) => {
@@ -198,9 +199,9 @@ export default function BookingDetail() {
     }
   };
 
-  console.log(parent);
+  //  console.log(parent);
   //   console.log(childId);
-  console.log(child);
+  // console.log(child);
 
   if (loading) {
     return (
@@ -261,21 +262,6 @@ export default function BookingDetail() {
             )}
           </div>
         </div>
-
-        {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Summary</h3>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2 text-gray-700">
-              <Users className="h-4 w-4 text-primary-600" />
-              <span className="text-sm">
-                Parent: {parent?.parentName || "—"}
-              </span>
-            </div>
-            <div className="text-sm text-gray-700">
-              Child: {child?.childName || "—"}
-            </div>
-          </div>
-        </div> */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -351,7 +337,7 @@ export default function BookingDetail() {
             <label className="block text-sm text-gray-700 mb-1">Date</label>
             <DatePicker
               format="DD/MM/YYYY"
-              value={dayjs(assignDate)}
+              value={dayjs(toDateKey(booking.dutyStartingtime))}
               onChange={(d) =>
                 setAssignDate(toDateKey(d?.toDate() || new Date()))
               }

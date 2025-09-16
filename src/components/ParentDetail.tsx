@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Phone,
@@ -7,6 +7,11 @@ import {
   Bus,
   Clock,
   Users,
+  Plus,
+  Calendar,
+  X,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 
 interface Child {
@@ -30,6 +35,17 @@ interface ParentDetailData {
   children: Child[];
 }
 
+interface BookingItem {
+  _id: string;
+  parentInfo: { _id: string; parentName: string };
+  childInfo: { _id: string; childName: string };
+  caregiverInfo?: { _id: string; caregiverName: string };
+  dutyDuration: string;
+  dutyShift: string;
+  dutyStartingtime: string;
+  additionalNotes?: string;
+}
+
 interface ApiResponse {
   code: number;
   status: string;
@@ -39,7 +55,10 @@ interface ApiResponse {
 
 import { useNavigate, useParams } from "react-router-dom";
 import { get } from "../lib/api";
-import { formatDisplayDate } from "../lib/date";
+import { formatDisplayDate, toDateKey } from "../lib/date";
+import dayjs from "dayjs";
+import { DatePicker } from "@mui/x-date-pickers";
+import ParentBookingForm from "./ParentBookingForm";
 
 interface ParentDetailProps {
   id?: string;
@@ -53,6 +72,72 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
   const [data, setData] = useState<ParentDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [dateFilter, setDateFilter] = useState("");
+  const [dutyAssignments, setDutyAssignments] = useState<any[]>([]);
+
+  const loadBookings = async () => {
+    if (!effectiveId) return;
+    try {
+      setBookingsLoading(true);
+      const { data: json } = await get("/api/v1/booking");
+      console.log("All bookings response:", json);
+      if (json && Array.isArray(json.data)) {
+        const parentBookings = json.data.filter(
+          (booking: BookingItem) => booking.parentInfo._id === effectiveId
+        );
+        console.log("Parent bookings:", parentBookings);
+        // Log each booking to see the structure
+        parentBookings.forEach((booking: any, index: number) => {
+          console.log(`Booking ${index}:`, booking);
+          console.log(`Booking ${index} caregiverInfo:`, booking.caregiverInfo);
+          console.log(
+            `Booking ${index} caregiver:`,
+            (booking as any).caregiver
+          );
+          console.log(
+            `Booking ${index} assignedCaregiver:`,
+            (booking as any).assignedCaregiver
+          );
+          console.log(
+            `Booking ${index} caregiverId:`,
+            (booking as any).caregiverId
+          );
+          console.log(`Booking ${index} all keys:`, Object.keys(booking));
+        });
+        setBookings(parentBookings);
+      }
+    } catch (e) {
+      console.error("Failed to load bookings:", e);
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  const loadDutyAssignments = async () => {
+    try {
+      const { data: res } = await get<any>("/api/v1/duty-assign");
+      console.log("Duty assignments response:", res);
+      if (Array.isArray(res?.data)) {
+        setDutyAssignments(res.data);
+        console.log("Loaded duty assignments:", res.data.length);
+      }
+    } catch (e) {
+      console.error("Failed to load duty assignments:", e);
+    }
+  };
+
+  const getBookingAssignment = (bookingId: string) => {
+    return dutyAssignments.find((assignment) => {
+      const assignmentBookingId =
+        typeof assignment.bookingId === "string"
+          ? assignment.bookingId
+          : assignment.bookingId?._id;
+      return assignmentBookingId === bookingId;
+    });
+  };
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -72,6 +157,8 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
       }
     };
     fetchDetail();
+    loadBookings();
+    loadDutyAssignments();
   }, [effectiveId]);
 
   if (loading) {
@@ -110,8 +197,17 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
             {data.parentName}
           </h2>
         </div>
-        <div className="h-10 w-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white font-bold">
-          {data.parentName.charAt(0)}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowBookingForm(true)}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Booking</span>
+          </button>
+          <div className="h-10 w-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white font-bold">
+            {data.parentName.charAt(0)}
+          </div>
         </div>
       </div>
 
@@ -206,6 +302,152 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
           </div>
         )}
       </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Bookings</h3>
+          <div className="flex items-center space-x-3">
+            <div className="w-48">
+              <DatePicker
+                format="DD/MM/YYYY"
+                value={dateFilter ? dayjs(dateFilter) : null}
+                onChange={(d) => setDateFilter(d ? toDateKey(d.toDate()) : "")}
+                slotProps={{ textField: { size: "small", fullWidth: true } }}
+              />
+            </div>
+            {dateFilter && (
+              <button
+                onClick={() => setDateFilter("")}
+                className="p-2 rounded-md bg-gray-100 hover:bg-gray-200"
+                title="Clear date filter"
+              >
+                <X className="h-4 w-4 text-gray-600" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {bookingsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-pulse text-gray-500">
+              Loading bookings...
+            </div>
+          </div>
+        ) : (
+          <>
+            {bookings.length === 0 ? (
+              <p className="text-sm text-gray-600">No bookings found.</p>
+            ) : (
+              <div className="space-y-3">
+                {bookings
+                  .filter((booking) =>
+                    dateFilter
+                      ? toDateKey(booking.dutyStartingtime) === dateFilter
+                      : true
+                  )
+                  .map((booking) => (
+                    <div
+                      key={booking._id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-xs font-semibold">
+                            <Calendar className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {booking.childInfo?.childName || "—"}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {formatDisplayDate(booking.dutyStartingtime)} •{" "}
+                              {booking.dutyDuration} • {booking.dutyShift}
+                            </p>
+
+                            {/* Duty Assignment Status */}
+                            <div className="flex items-center space-x-1 mt-1">
+                              {(() => {
+                                const assignment = getBookingAssignment(
+                                  booking._id
+                                );
+
+                                console.log(
+                                  `Rendering booking ${booking._id}:`,
+                                  {
+                                    assignment,
+                                    hasAssignment: !!assignment,
+                                    caregiverInfo: assignment?.caregiverInfo,
+                                    caregiverName:
+                                      assignment?.caregiverInfo?.caregiverName,
+                                  }
+                                );
+
+                                return assignment ? (
+                                  <>
+                                    <Check className="h-3 w-3 text-green-600" />
+                                    <span className="text-xs text-green-700 font-medium">
+                                      Duty Assigned
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      to{" "}
+                                      {assignment.caregiverInfo
+                                        ?.caregiverName ||
+                                        assignment.caregiverInfo?.name ||
+                                        "Unknown"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <AlertCircle className="h-3 w-3 text-orange-500" />
+                                    <span className="text-xs text-orange-600 font-medium">
+                                      Duty Not Assigned
+                                    </span>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="space-y-2">
+                            <p className="text-xs text-gray-500">
+                              {booking.additionalNotes && (
+                                <span className="block truncate max-w-32">
+                                  {booking.additionalNotes}
+                                </span>
+                              )}
+                            </p>
+                            <button
+                              onClick={() =>
+                                navigate(`/appointments/${booking._id}`)
+                              }
+                              className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {showBookingForm && data && (
+        <ParentBookingForm
+          parentId={data._id}
+          parentName={data.parentName}
+          children={data.children}
+          onClose={() => setShowBookingForm(false)}
+          onSuccess={() => {
+            loadBookings();
+            setShowBookingForm(false);
+          }}
+        />
+      )}
     </div>
   );
 }
