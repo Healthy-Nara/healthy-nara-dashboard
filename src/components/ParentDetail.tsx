@@ -356,10 +356,10 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
                             <Calendar className="h-4 w-4" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            {/* <p className="text-sm font-medium text-gray-900">
                               {booking.childInfo?.childName || "—"}
-                            </p>
-                            <p className="text-xs text-gray-600">
+                            </p> */}
+                            <p className="text-md text-gray-600">
                               {formatDisplayDate(booking.dutyStartingtime)} •{" "}
                               {booking.dutyDuration} • {booking.dutyShift}
                             </p>
