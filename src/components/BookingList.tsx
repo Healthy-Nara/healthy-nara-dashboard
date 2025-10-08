@@ -7,7 +7,9 @@ import {
   Plus,
   X,
   CloudMoon,
-  Notebook,
+  CheckCircle,
+  AlertCircle,
+  Clock as ClockIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { get } from "../lib/api";
@@ -23,6 +25,7 @@ interface BookingItem {
   dutyShift: string;
   dutyStartingtime: string;
   additionalNotes?: string;
+  bookingStatus: string;
 }
 
 export default function BookingList() {
@@ -50,6 +53,36 @@ export default function BookingList() {
   useEffect(() => {
     load();
   }, []);
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case "in-progress":
+        return <ClockIcon className="h-4 w-4 text-blue-600" />;
+      case "assigned":
+        return <CheckCircle className="h-4 w-4 text-yellow-600" />;
+      case "pending":
+        return <AlertCircle className="h-4 w-4 text-gray-500" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "in-progress":
+        return "bg-blue-100 text-blue-800";
+      case "assigned":
+        return "bg-yellow-100 text-yellow-800";
+      case "pending":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   const dateKey = (iso: string) => toDateKey(iso);
 
@@ -155,56 +188,102 @@ export default function BookingList() {
           No bookings found.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filtered.map((b) => (
-            <div
-              key={b._id}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all duration-300 hover:border-primary-200"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2 text-gray-900 font-semibold">
-                  <Users className="h-4 w-4 text-primary-600" />
-                  <span>{b.parentInfo?.parentName || "Parent"}</span>
-                </div>
-              </div>
-              <div className="space-y-2 text-gray-700">
-                <div>
-                  <span className="text-sm">Child: </span>
-                  <span className="text-sm font-medium">
-                    {b.childInfo?.childName || "—"}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Calendar className="h-4 w-4 text-secondary-600" />
-                  <span className="text-sm">
-                    {formatDisplayDate(b.dutyStartingtime)}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-primary-600" />
-                  <span className="text-sm capitalize">{b.dutyDuration}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CloudMoon className="h-4 w-4 text-primary-600" />
-                  <span className="text-sm capitalize">{b.dutyShift}</span>
-                </div>
-                {/* {b.additionalNotes && (
-                  <div className="flex items-center space-x-2">
-                    <Notebook className="h-4 w-4 text-primary-600" />
-                    <p className="text-xs text-gray-600">{b.additionalNotes}</p>
-                  </div>
-                )} */}
-                <div className="pt-2">
-                  <button
-                    onClick={() => navigate(`/appointments/${b._id}`)}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700"
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Parent
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Child
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Duration
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Shift
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filtered.map((b) => (
+                  <tr
+                    key={b._id}
+                    className="hover:bg-gray-50 transition-colors duration-150"
                   >
-                    View
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 text-primary-600 mr-2" />
+                        <div className="text-sm font-medium text-gray-900">
+                          {b.parentInfo?.parentName || "Parent"}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {b.childInfo?.childName || "—"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-secondary-600 mr-2" />
+                        <div className="text-sm text-gray-900">
+                          {formatDisplayDate(b.dutyStartingtime)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 text-primary-600 mr-2" />
+                        <div className="text-sm text-gray-900 capitalize">
+                          {b.dutyDuration}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <CloudMoon className="h-4 w-4 text-primary-600 mr-2" />
+                        <div className="text-sm text-gray-900 capitalize">
+                          {b.dutyShift}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {getStatusIcon(b.bookingStatus)}
+                        <span
+                          className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                            b.bookingStatus
+                          )}`}
+                        >
+                          {b.bookingStatus.replace("-", " ")}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => navigate(`/appointments/${b._id}`)}
+                        className="text-primary-600 hover:text-primary-900 px-3 py-1.5 text-xs font-medium rounded-md bg-primary-50 hover:bg-primary-100 transition-colors"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

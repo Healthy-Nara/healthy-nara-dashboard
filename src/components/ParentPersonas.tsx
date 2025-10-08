@@ -46,8 +46,9 @@ export default function ParentPersonas({ onViewParent }: ParentPersonasProps) {
       const { data } = await get<ApiResponse>("/api/v1/parent");
 
       if (data.code === 200 && data.data.parentPersona) {
-        setParents(data.data.parentPersona);
-        setFilteredParents(data.data.parentPersona);
+        const reversedParents = data.data.parentPersona.reverse();
+        setParents(reversedParents);
+        setFilteredParents(reversedParents);
       } else {
         throw new Error("Invalid response format");
       }
@@ -57,6 +58,8 @@ export default function ParentPersonas({ onViewParent }: ParentPersonasProps) {
       setLoading(false);
     }
   };
+
+  console.log(filteredParents);
 
   useEffect(() => {
     fetchParents();

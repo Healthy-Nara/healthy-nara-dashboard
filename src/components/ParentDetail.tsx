@@ -12,6 +12,7 @@ import {
   X,
   Check,
   AlertCircle,
+  Trash2,
 } from "lucide-react";
 
 interface Child {
@@ -54,7 +55,7 @@ interface ApiResponse {
 }
 
 import { useNavigate, useParams } from "react-router-dom";
-import { get } from "../lib/api";
+import { get, del } from "../lib/api";
 import { formatDisplayDate, toDateKey } from "../lib/date";
 import dayjs from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers";
@@ -77,6 +78,9 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [dateFilter, setDateFilter] = useState("");
   const [dutyAssignments, setDutyAssignments] = useState<any[]>([]);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadBookings = async () => {
     if (!effectiveId) return;
@@ -126,6 +130,23 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
       }
     } catch (e) {
       console.error("Failed to load duty assignments:", e);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!effectiveId) return;
+    try {
+      setDeleting(true);
+      setDeleteError(null);
+      await del(`/api/v1/parent/${effectiveId}`);
+      navigate("/parents");
+    } catch (e: any) {
+      setDeleteError(
+        e?.response?.data?.message ||
+          (e instanceof Error ? e.message : "Failed to delete parent")
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -204,6 +225,13 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
           >
             <Plus className="h-4 w-4" />
             <span>Add Booking</span>
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Delete Parent</span>
           </button>
           <div className="h-10 w-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white font-bold">
             {data.parentName.charAt(0)}
@@ -447,6 +475,40 @@ export default function ParentDetail({ id, onBack }: ParentDetailProps) {
             setShowBookingForm(false);
           }}
         />
+      )}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Delete Parent
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this parent? This action cannot be
+              undone and will also delete all associated bookings and
+              assignments.
+            </p>
+            {deleteError && (
+              <p className="text-sm text-red-600 mb-4">{deleteError}</p>
+            )}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

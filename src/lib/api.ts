@@ -14,3 +14,4 @@ export const get = <T = any>(url: string, params?: any) =>
   api.get<T>(url, { params });
 export const post = <T = any>(url: string, data?: any) =>
   api.post<T>(url, data);
+export const del = <T = any>(url: string) => api.delete<T>(url);

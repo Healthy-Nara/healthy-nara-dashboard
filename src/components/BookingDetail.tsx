@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { get, post } from "../lib/api";
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { get, post, del } from "../lib/api";
+import { ArrowLeft, Calendar, Clock, Trash2 } from "lucide-react";
 import { formatDisplayDate, toApiDateFromInput, toDateKey } from "../lib/date";
-import dayjs from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers";
 
 interface BookingItem {
@@ -53,6 +52,16 @@ export default function BookingDetail() {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteAssignConfirm, setShowDeleteAssignConfirm] = useState(false);
+  const [deletingAssign, setDeletingAssign] = useState(false);
+  const [deleteAssignError, setDeleteAssignError] = useState<string | null>(
+    null
+  );
+  const [selectedAssignId, setSelectedAssignId] = useState<string | null>(null);
+  console.log("assignDate", booking);
 
   useEffect(() => {
     const load = async () => {
@@ -199,6 +208,42 @@ export default function BookingDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!booking?._id) return;
+    try {
+      setDeleting(true);
+      setDeleteError(null);
+      await del(`/api/v1/booking/${booking._id}`);
+      navigate(-1);
+    } catch (e: any) {
+      setDeleteError(
+        e?.response?.data?.message ||
+          (e instanceof Error ? e.message : "Failed to delete booking")
+      );
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteAssignment = async () => {
+    if (!selectedAssignId) return;
+    try {
+      setDeletingAssign(true);
+      setDeleteAssignError(null);
+      await del(`/api/v1/duty-assign/${selectedAssignId}`);
+      setShowDeleteAssignConfirm(false);
+      setSelectedAssignId(null);
+      await loadAssignments();
+    } catch (e: any) {
+      setDeleteAssignError(
+        e?.response?.data?.message ||
+          (e instanceof Error ? e.message : "Failed to delete assignment")
+      );
+    } finally {
+      setDeletingAssign(false);
+    }
+  };
+
   //  console.log(parent);
   //   console.log(childId);
   // console.log(child);
@@ -237,6 +282,13 @@ export default function BookingDetail() {
           </button>
           <h2 className="text-2xl font-bold text-gray-900">Booking Detail</h2>
         </div>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <Trash2 className="h-4 w-4" />
+          <span>Delete Booking</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -337,7 +389,7 @@ export default function BookingDetail() {
             <label className="block text-sm text-gray-700 mb-1">Date</label>
             <DatePicker
               format="DD/MM/YYYY"
-              value={dayjs(toDateKey(booking.dutyStartingtime))}
+              // value={dayjs(toDateKey(booking.dutyStartingtime))}
               onChange={(d) =>
                 setAssignDate(toDateKey(d?.toDate() || new Date()))
               }
@@ -379,6 +431,7 @@ export default function BookingDetail() {
                     <th className="py-2 pr-4">Date</th>
                     <th className="py-2 pr-4">Caregiver</th>
                     <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -395,6 +448,17 @@ export default function BookingDetail() {
                       <td className="py-2 pr-4 capitalize">
                         {a.careGiverStatus?.replace("-", " ") || "—"}
                       </td>
+                      <td className="py-2 pr-4">
+                        <button
+                          onClick={() => {
+                            setSelectedAssignId(a._id);
+                            setShowDeleteAssignConfirm(true);
+                          }}
+                          className="text-red-600 hover:text-red-800 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -403,6 +467,75 @@ export default function BookingDetail() {
           )}
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Delete Booking
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this booking? This action cannot
+              be undone.
+            </p>
+            {deleteError && (
+              <p className="text-sm text-red-600 mb-4">{deleteError}</p>
+            )}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteAssignConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Delete Assignment
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this duty assignment? This action
+              cannot be undone.
+            </p>
+            {deleteAssignError && (
+              <p className="text-sm text-red-600 mb-4">{deleteAssignError}</p>
+            )}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteAssignConfirm(false);
+                  setSelectedAssignId(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={deletingAssign}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAssignment}
+                disabled={deletingAssign}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingAssign ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
