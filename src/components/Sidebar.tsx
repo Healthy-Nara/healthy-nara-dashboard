@@ -9,6 +9,7 @@ import {
   Home,
   ClipboardList,
   UserCheck,
+  FileText,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -31,6 +32,7 @@ const menuItems = [
   { id: "duties", label: "Duties", icon: ClipboardList, to: "/duties" },
   { id: "analytics", label: "Analytics", icon: BarChart3, to: "/analytics" },
   { id: "messages", label: "Messages", icon: MessageCircle, to: "/messages" },
+  { id: "terms", label: "Terms & Conditions", icon: FileText, to: "/terms" },
   { id: "settings", label: "Settings", icon: Settings, to: "/settings" },
 ];
 

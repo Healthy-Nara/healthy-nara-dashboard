@@ -14,13 +14,14 @@ import BookingDetail from "./components/BookingDetail";
 import Duties from "./components/Duties";
 import DutyDetail from "./components/DutyDetail";
 import Login from "./components/Login";
+import TermsAndConditions from "./components/TermsAndConditions";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Routing now controls active page
   const [authed, setAuthed] = useState<boolean>(
     typeof localStorage !== "undefined" &&
-      localStorage.getItem("hn_auth") === "1"
+      localStorage.getItem("hn_auth") === "1",
   );
 
   const toggleSidebar = () => {
@@ -77,6 +78,7 @@ function App() {
                 path="/settings"
                 element={<Placeholder title="Settings" />}
               />
+              <Route path="/terms" element={<TermsAndConditions />} />
             </Routes>
           </div>
         </main>
