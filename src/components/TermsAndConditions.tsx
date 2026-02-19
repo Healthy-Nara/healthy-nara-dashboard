@@ -199,7 +199,7 @@ const TermsAndConditions: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
           Terms and Conditions
         </h1>
-        <div className="prose max-w-none text-gray-600">
+        {/* <div className="prose max-w-none text-gray-600">
           <p className="mb-4">
             Welcome to HealthyNara. By using our services, you agree to comply
             with and be bound by the following terms and conditions.
@@ -237,7 +237,7 @@ const TermsAndConditions: React.FC = () => {
             Service fees are clearly communicated before booking. No hidden
             charges will be applied.
           </p>
-        </div>
+        </div> */}
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -281,7 +281,7 @@ const TermsAndConditions: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {formatDate(caregiver.createdAt)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <button
                       onClick={() => handleDelete(caregiver._id)}
                       disabled={deleteLoading === caregiver._id}
@@ -330,7 +330,7 @@ const TermsAndConditions: React.FC = () => {
                         </>
                       )}
                     </button>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>

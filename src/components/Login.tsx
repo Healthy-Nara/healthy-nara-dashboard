@@ -22,7 +22,11 @@ export default function Login({ onLogin }: LoginProps) {
     }
     try {
       setLoading(true);
-      if (username === "TSO" && password === "healthynara@2025") {
+      if (
+        username === "TSO" ||
+        username === "MKZ" ||
+        (username === "KMMZ" && password === "healthynara@2025")
+      ) {
         localStorage.setItem("hn_auth", "1");
         onLogin();
         navigate("/dashboard", { replace: true });
